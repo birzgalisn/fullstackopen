@@ -71,29 +71,30 @@ const App = () => {
               type: "success",
               message: `Updated ${updatedPerson.name}`,
             });
+            setNewPerson({ name: "", number: "" });
           })
-          .catch(() => {
+          .catch((err) => {
             setNotification({
               type: "error",
-              message: `Information of ${newPerson.name} has already been removed from server`,
+              message: err.response.data.error,
             });
           });
-        return;
       }
+      return;
     }
     personService
       .create(newPerson)
       .then((person) => {
         setPersons((prev) => [...prev, person]);
         setNotification({ type: "success", message: `Added ${person.name}` });
+        setNewPerson({ name: "", number: "" });
       })
-      .catch(() => {
+      .catch((err) => {
         setNotification({
           type: "error",
-          message: `Failed to add ${newPerson.name}`,
+          message: err.response.data.error,
         });
       });
-    setNewPerson({ name: "", number: "" });
   };
 
   const onPersonDelete = (person) => {
@@ -114,10 +115,10 @@ const App = () => {
             message: `Information of ${person.name} has been removed from server`,
           });
         })
-        .catch(() => {
+        .catch((err) => {
           setNotification({
             type: "error",
-            message: `Information of ${name} has already been removed from server`,
+            message: err.response.data.error,
           });
         });
     }
