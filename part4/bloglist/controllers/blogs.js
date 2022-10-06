@@ -1,5 +1,6 @@
 const blogsRouter = require("express").Router();
 const Blog = require("../models/blog");
+const User = require("../models/user");
 
 blogsRouter.get("/", async (req, res) => {
   const blogs = await Blog.find({});
@@ -19,6 +20,11 @@ blogsRouter.get("/:id", async (req, res) => {
 blogsRouter.post("/", async (req, res) => {
   const { body, user } = req;
 
+  const dbUser = await User.findById(user);
+  if (!dbUser) {
+    return res.status(400).json({ error: "User non-existing" });
+  }
+
   const blog = new Blog({ ...body, user });
   await blog.save();
 
@@ -26,13 +32,13 @@ blogsRouter.post("/", async (req, res) => {
 });
 
 blogsRouter.put("/:id", async (req, res) => {
-  const { body, user } = req;
+  const { user, id, ...body } = req.body;
 
-  const blog = await Blog.findByIdAndUpdate(
-    req.params.id,
-    { ...body, user },
-    { new: true }
-  );
+  const blog = await Blog.findOneAndUpdate({ _id: req.params.id }, body, {
+    new: true,
+    runValidators: true,
+    context: "query",
+  });
 
   res.json(blog);
 });

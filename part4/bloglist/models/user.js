@@ -22,7 +22,7 @@ const userSchema = new mongoose.Schema({
   ],
 });
 
-userSchema.pre(/^find$/, function (next) {
+userSchema.pre("find", function (next) {
   if (this.options._recursed) {
     return next();
   }
@@ -34,7 +34,7 @@ userSchema.pre(/^find$/, function (next) {
   next();
 });
 
-userSchema.post("save", (err, doc, next) => {
+userSchema.post("save", function (err, doc, next) {
   const { name, code } = err;
   if (name === "MongoServerError" && code === 11000) {
     const validationError = new mongoose.Error.ValidationError(null);

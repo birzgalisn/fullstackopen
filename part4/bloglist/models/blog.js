@@ -11,7 +11,7 @@ const blogSchema = new mongoose.Schema({
   },
   url: {
     type: String,
-    requried: [true, "Url missing"],
+    required: [true, "Url missing"],
   },
   likes: {
     type: Number,
@@ -24,7 +24,7 @@ const blogSchema = new mongoose.Schema({
   },
 });
 
-blogSchema.pre(/^find$/, function (next) {
+blogSchema.pre("find", function (next) {
   if (this.options._recursed) {
     return next();
   }
@@ -36,24 +36,34 @@ blogSchema.pre(/^find$/, function (next) {
   next();
 });
 
-blogSchema.post("save", function (blog) {
-  Promise.all([
-    this.model("User").findOneAndUpdate(
-      { _id: blog.user },
-      { $push: { blogs: blog._id } },
+blogSchema.post("findOneAndUpdate", async function (doc) {
+  if (!doc.populated("user")) {
+    await doc.populate({ path: "user", select: "-blogs" });
+  }
+});
+
+blogSchema.post("save", async function () {
+  await Promise.all([
+    await new Promise((resolve) => {
+      if (!this.populated("user")) {
+        return resolve(this.populate({ path: "user", select: "-blogs" }));
+      }
+      resolve();
+    }),
+    await this.model("User").findOneAndUpdate(
+      { _id: this.user },
+      { $push: { blogs: this._id } },
       { timestamps: false }
     ),
   ]);
 });
 
-blogSchema.post("remove", function (blog) {
-  Promise.all([
-    this.model("User").findOneAndUpdate(
-      { _id: blog.user },
-      { $pull: { blogs: blog._id } },
-      { timestamps: false }
-    ),
-  ]);
+blogSchema.post("remove", async function () {
+  await this.model("User").findOneAndUpdate(
+    { _id: this.user },
+    { $pull: { blogs: this._id } },
+    { timestamps: false }
+  );
 });
 
 blogSchema.set("toJSON", {
